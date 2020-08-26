@@ -77,34 +77,37 @@ module.exports.login = async (req, res, next) => {
     const user = await User.find({
       username: username
     }).exec();
-    
-    if(user != ''){
-      await bcrypt.compare(password, user[0].password, (errBcrypt, resBcrypt) => {
-        if (!resBcrypt) {
-          throw new BadCredentialsError({
-            message: 'Username or password is incorrect'
-          });
-        }
-      });
-    }else{
+
+    if (user != '') {
+      var resBcrypt = await bcrypt.compare(password, user[0].password);
+      if (!resBcrypt) {
+        throw new BadCredentialsError({
+          message: 'Username or password is incorrect'
+        });
+      } else {
+        // Generate token
+        const {
+          accessToken,
+          refreshToken
+        } = await generateToken(user[0]);
+
+        await res.json({
+          accessToken,
+          accessTokenExpiresIn: config.accessToken.expiresIn,
+          refreshToken,
+          refreshTokenExpiresIn: config.refreshToken.expiresIn
+        });
+      }
+
+    } else {
       throw new BadCredentialsError({
         message: 'Username or password is incorrect'
       });
     }
 
-    // Generate token
-    const {
-      accessToken,
-      refreshToken
-    } = await generateToken(user[0]);
 
-    res.json({
-      accessToken,
-      accessTokenExpiresIn: config.accessToken.expiresIn,
-      refreshToken,
-      refreshTokenExpiresIn: config.refreshToken.expiresIn
-    });
   } catch (err) {
+    console.error('pass', err.stack);
     next(err);
   }
 };
@@ -152,8 +155,10 @@ module.exports.refreshToken = async (req, res, next) => {
       user
     );
 
-    await RefreshToken.deleteOne({ _id: oldRefreshToken[0]._id });
-  
+    await RefreshToken.deleteOne({
+      _id: oldRefreshToken[0]._id
+    });
+
     res.json({
       accessToken,
       accessTokenExpiresIn: config.accessToken.expiresIn,
@@ -166,6 +171,31 @@ module.exports.refreshToken = async (req, res, next) => {
 };
 
 module.exports.logout = async (req, res, next) => {
+  try{
+    const refreshToken = req.body.token;
+    if (!refreshToken) {
+      throw new MissingRequiredParameterError({
+        info: {
+          body: ['token']
+        }
+      });
+    }
+    console.log('refreshToken', refreshToken);
+    const oldRefreshToken = await RefreshToken.find({
+      token: refreshToken
+    }).exec();
+    if (oldRefreshToken == '') {
+      throw new InvalidTokenError();
+    }
 
-  res.status(200).json({ msg: 'logged out'});
+    await RefreshToken.deleteOne({
+      token: refreshToken
+    });
+
+    res.status(200).json({
+      msg: 'logged out'
+    });
+  } catch(err){
+    next(err);
+  }
 };

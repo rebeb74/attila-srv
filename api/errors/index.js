@@ -26,7 +26,7 @@ class HTTPError extends WError {
     this.status = status;
     this.expose = expose;
   }
-
+  
   /**
    * @method fullStack
    * @returns {string} A string containing the full stack trace.

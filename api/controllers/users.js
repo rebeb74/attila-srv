@@ -1,6 +1,13 @@
 const User = require('../models/user');
 const mongoose = require('mongoose');
+const {
+  check
+} = require('prettier');
+const {
+  forEach
+} = require('lodash');
 
+const EMAIL_REGEX = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
 /**
  * Anything controller.
@@ -32,6 +39,18 @@ module.exports.getUsers = (req, res) => {
   }
 };
 
+module.exports.getUser = (req, res) => {
+  const id = req.user._id
+  User.findById(id)
+    .then((user) => {
+      return res.status(200).json(user);
+    })
+    .catch(err => res.status(500).json({
+      message: `user with id ${id} not found`,
+      error: err
+    }));
+};
+
 module.exports.getUserById = (req, res) => {
   const id = req.params.id;
   if (id == req.user._id || req.user.isAdmin) {
@@ -50,26 +69,163 @@ module.exports.getUserById = (req, res) => {
   }
 };
 
-module.exports.updateUserById = (req, res) => {
+module.exports.getUserIdByUsername = (req, res) => {
+  const username = req.params.username;
+
+  User.find({
+      username: username
+    })
+    .then((user) => {
+      return res.status(200).json(user[0]);
+    })
+    .catch(err => res.status(500).json({
+      message: `user not found`,
+      error: err
+    }));
+
+};
+
+module.exports.updateUserById = async (req, res) => {
   const id = req.params.id;
-  if (id == req.user._id || req.user.isAdmin) {
-    User.findByIdAndUpdate(id, {
+
+  if (req.body.email == null || req.body.username == null) {
+    throw new MissingRequiredParameterError({
+      info: {
+        body: ['email, username']
+      }
+    });
+  }
+
+  // Check username length
+  if (req.body.username.length >= 12 || req.body.username.length <= 3) {
+    return res.status(400).json({
+      'error': 'wrong username (must be length 3 - 12)'
+    });
+  }
+
+  // Validate email
+  if (!EMAIL_REGEX.test(req.body.email)) {
+    return res.status(400).json({
+      'error': 'email is not valid'
+    });
+  }
+
+  let checkUsername = false;
+  let checkEmail = false;
+
+  await User.find({
+    username: req.body.username
+  }, (err, result) => {
+    if (result == '' || req.user._id.toString() === result[0]._id.toString()) {
+      if (id == req.user._id || req.user.isAdmin) {
+        checkUsername = true;
+      } else {
+        return res.status(403).json({
+          message: 'unauthorized access'
+        });
+      }
+    } else {
+      checkUsername = false;
+    }
+  });
+
+  await User.find({
+    email: req.body.email
+  }, (err, result) => {
+    if (result == '' || req.user._id.toString() === result[0]._id.toString()) {
+      if (id == req.user._id || req.user.isAdmin) {
+        checkEmail = true;
+      } else {
+        return res.status(403).json({
+          message: 'unauthorized access'
+        });
+      }
+    } else {
+      checkEmail = false;
+    }
+  });
+
+  if (checkUsername && checkEmail) {
+    await User.findByIdAndUpdate(id, {
         username: req.body.username,
-        email: req.body.email
+        email: req.body.email,
+        share: req.body.share,
       },
       (err, user) => {
         if (err) {
-          return res.status(500).json(err);
+          return res.status(500).json({
+            message: 'user not found'
+          });
         }
         res.status(202).json({
-          msg: `${user} id ${id} updated`
+          msg: `user updated`
         });
       });
   } else {
-    return res.status(403).json({
-      message: 'unauthorized access'
+    return res.status(409).json({
+      message: `email or user already exist`
     });
   }
+
+  let isSharedAdded = false;
+
+  if (req.body.share != []) {
+    req.body.share.forEach(element => {
+      User.findById(element.id).exec()
+        .then((userShare) => {
+          if (userShare.isShared != []) {
+            let isAlreadyAdded = false;
+            userShare.isShared.forEach((isSharedUser => {
+              if(isSharedUser.id == req.body._id){
+                isAlreadyAdded = true;
+              }
+            }));
+            if(!isAlreadyAdded){
+              userShare.isShared.push({
+                id: req.user._id,
+                email: req.user.email,
+                username: req.user.username
+              });
+              User.findByIdAndUpdate(userShare._id, userShare)
+                .exec()
+                .then((success) => console.log( success))
+                .catch((error) => console.log( error))
+              isSharedAdded = true;
+            }
+          } else {
+            userShare.isShared.push({
+              id: req.user._id,
+              email: req.user.email,
+              username: req.user.username
+            });
+            User.findByIdAndUpdate(userShare._id, userShare)
+              .exec()
+              .then((success) => console.log( success))
+              .catch((error) => console.log( error))
+            isSharedAdded = true;
+          }
+        })
+        .catch((error) => console.log(error));
+    });
+  }
+};
+
+module.exports.updateUserIsSharedById = (req, res) => {
+  const id = req.params.id;
+  console.log('req.body', req.body);
+  User.findByIdAndUpdate(id, req.body)
+  .exec()
+  .then((success) => {
+    console.log('success', success)
+    res.status(202).json({
+      msg: `user updated`
+    });
+  })
+  .catch((error) => {
+    return res.status(500).json({
+      message: 'user not found'
+    });
+  })
 };
 
 module.exports.deleteUserById = (req, res) => {

@@ -60,7 +60,7 @@ module.exports.register = (req, res) => {
                 const user = new User(req.body);
                 user.password = bcryptedPassword;
                 user.isAdmin = false;
-                user.share = '';
+                user.share = [];
                 user.save((err, user) => {
                     if (err) {
                         return res.status(500).json({

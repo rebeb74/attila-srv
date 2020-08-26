@@ -17,15 +17,33 @@ router.get(
 );
 
 router.get(
+    '/user',
+    auth,
+    controller.getUser
+);
+
+router.get(
     '/users/:id',
     auth,
     controller.getUserById
+);
+
+router.get(
+    '/user/:username',
+    auth,
+    controller.getUserIdByUsername
 );
 
 router.put(
     '/users/:id',
     auth,
     controller.updateUserById
+);
+
+router.put(
+    '/user/:id',
+    auth,
+    controller.updateUserIsSharedById
 );
 
 router.delete(

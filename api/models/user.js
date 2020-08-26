@@ -5,8 +5,20 @@ const userSchema = new mongoose.Schema({
     username: String,
     password: String,
     isAdmin: Boolean,
-    share: [String],
-    createdOn: { type: Date, default: Date.now }
+    share: [{
+        id: String,
+        email: String,
+        username: String,
+    }],
+    isShared: [{
+        id: String,
+        email: String,
+        username: String
+    }],
+    createdOn: {
+        type: Date,
+        default: Date.now
+    }
 });
 
 module.exports = mongoose.model('user', userSchema);
