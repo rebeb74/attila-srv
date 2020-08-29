@@ -52,9 +52,37 @@ module.exports.getEventById = (req, res) => {
 
     })
     .catch(err => res.status(404).json({
-      message: `event with id ${id} not found`,
+      message: `event not found`,
       error: err
     }));
+};
+
+module.exports.getShareEventsByUserId = (req, res) => {
+  const id = req.params.id;
+  if (req.user.share != []) {
+    req.user.share.forEach((shareUser) => {
+      if (id == shareUser.id) {
+        Event.find({userId: id})
+        .then((event) => {
+            return res.status(200).json(event);
+        })
+        .catch(err => res.status(404).json({
+          message: `event with id ${id} not found`,
+          error: err
+        }));
+      } else {
+        return res.status(403).json({
+          message: 'unauthorized access'
+        });
+      }
+
+    });
+  } else {
+    return res.status(404).json({
+      message: 'share empty'
+    });
+  }
+
 };
 
 module.exports.updateEventById = (req, res) => {

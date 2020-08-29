@@ -57,6 +57,34 @@ module.exports.getTaskById = (req, res) => {
         }));
 };
 
+module.exports.getShareTasksByUserId = (req, res) => {
+    const id = req.params.id;
+    if (req.user.share != []) {
+      req.user.share.forEach((shareUser) => {
+        if (id == shareUser.id) {
+          Task.find({userId: id})
+          .then((task) => {
+              return res.status(200).json(task);
+          })
+          .catch(err => res.status(404).json({
+            message: `task not found`,
+            error: err
+          }));
+        } else {
+          return res.status(403).json({
+            message: 'unauthorized access'
+          });
+        }
+  
+      });
+    } else {
+      return res.status(404).json({
+        message: 'share empty'
+      });
+    }
+  
+  };
+
 module.exports.updateTaskById = (req, res) => {
     const id = req.params.id;
     Task.findById(id)

@@ -21,6 +21,12 @@ router.get(
     controller.getTaskById
 );
 
+router.get(
+    '/share-tasks/:id',
+    auth,
+    controller.getShareTasksByUserId
+);
+
 router.put(
     '/tasks/:id',
     auth,

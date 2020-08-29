@@ -21,6 +21,12 @@ router.get(
     controller.getEventById
 );
 
+router.get(
+    '/share-events/:id',
+    auth,
+    controller.getShareEventsByUserId
+);
+
 router.put(
     '/events/:id',
     auth,

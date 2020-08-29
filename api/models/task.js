@@ -5,7 +5,7 @@ const taskSchema = new mongoose.Schema({
     title: String,
     description: String,
     startTime: { type: Date },
-    repeat: Number,
+    repeat: String,
     altern: String,
     createdOn: { type: Date, default: Date.now }
 });
