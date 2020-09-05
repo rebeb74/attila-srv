@@ -4,8 +4,7 @@
   "description": "Home Manager",
   "main": "index.js",
   "scripts": {
-    "start": "npm run lint & nodemon app.js",
-    "lint": "./node_modules/.bin/eslint **/*.js"
+    "start": "node app.js"
   },
   "repository": {
     "type": "git",
@@ -17,6 +16,9 @@
     "manager"
   ],
   "author": "Bertrand PETIT",
+  "engines": {
+    "node": "12.18.3"
+  },
   "license": "ISC",
   "dependencies": {
     "app-root-path": "^3.0.0",
