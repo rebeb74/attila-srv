@@ -9,6 +9,12 @@ router.post(
     controller.createTask
 );
 
+router.post(
+    '/tasks/:id',
+    auth,
+    controller.createTaskByUserId
+);
+
 router.get(
     '/tasks',
     auth,

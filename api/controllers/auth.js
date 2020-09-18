@@ -11,7 +11,7 @@ const {
 } = require('../config');
 const RefreshToken = require('../models/refreshToken');
 const User = require('../models/user');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 
 async function generateToken(user) {

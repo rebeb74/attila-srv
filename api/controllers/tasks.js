@@ -23,6 +23,18 @@ module.exports.createTask = (req, res) => {
     });
 };
 
+module.exports.createTaskByUserId = (req, res) => {
+    const id = req.params.id;
+    const task = new Task(req.body);
+    task.userId = id;
+    task.save((err, task) => {
+        if (err) {
+            return res.status(500).json(err);
+        }
+        res.status(201).json(task);
+    });
+};
+
 module.exports.getTasks = (req, res) => {
     Task.find({
             userId: req.user._id
