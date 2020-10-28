@@ -56,6 +56,34 @@ module.exports.getListById = (req, res) => {
     }));
 };
 
+module.exports.getShareListsByUserId = (req, res) => {
+  const id = req.params.id;
+  if (req.user.share != []) {
+    req.user.share.forEach((shareUser) => {
+      if (id == shareUser.id) {
+        List.find({userId: id})
+        .then((list) => {
+            return res.status(200).json(list);
+        })
+        .catch(err => res.status(404).json({
+          message: `list with id ${id} not found`,
+          error: err
+        }));
+      } else {
+        return res.status(403).json({
+          message: 'unauthorized access'
+        });
+      }
+
+    });
+  } else {
+    return res.status(404).json({
+      message: 'share empty'
+    });
+  }
+
+};
+
 module.exports.updateListById = (req, res) => {
   const id = req.params.id;
   List.findById(id)
