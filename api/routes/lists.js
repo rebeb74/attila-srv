@@ -21,12 +21,6 @@ router.get(
     controller.getListById
 );
 
-router.get(
-    '/share-lists/:id',
-    auth,
-    controller.getShareListsByUserId
-);
-
 router.put(
     '/lists/:id',
     auth,

@@ -23,14 +23,34 @@ module.exports.createList = (req, res) => {
 };
 
 module.exports.getLists = (req, res) => {
+  var allList = [];
   List.find({
       userId: req.user._id
     })
-    .sort({
-      'createdOn': -1
-    })
     .exec()
-    .then(lists => res.status(200).json(lists))
+    .then(listUser => {
+      listUser.forEach(listUserElement => {
+        allList.push(listUserElement);
+      })
+      req.user.share.forEach(shareUser => {
+        List.find({
+            userId: shareUser.id
+          })
+          .exec()
+          .then(listShare => {
+            listShare.forEach(listShareElement => {
+              if (listShareElement.public) {
+                allList.push(listShareElement);
+              }
+            })
+            res.status(200).json(allList)
+          })
+          .catch(err => res.status(500).json({
+            message: 'no list found :(',
+            error: err
+          }))
+      })
+    })
     .catch(err => res.status(500).json({
       message: 'no list found :(',
       error: err
@@ -56,59 +76,34 @@ module.exports.getListById = (req, res) => {
     }));
 };
 
-module.exports.getShareListsByUserId = (req, res) => {
-  const id = req.params.id;
-  if (req.user.share != []) {
-    req.user.share.forEach((shareUser) => {
-      if (id == shareUser.id) {
-        List.find({userId: id})
-        .then((list) => {
-            return res.status(200).json(list);
-        })
-        .catch(err => res.status(404).json({
-          message: `list with id ${id} not found`,
-          error: err
-        }));
-      } else {
-        return res.status(403).json({
-          message: 'unauthorized access'
-        });
-      }
-
-    });
-  } else {
-    return res.status(404).json({
-      message: 'share empty'
-    });
-  }
-
-};
-
 module.exports.updateListById = (req, res) => {
   const id = req.params.id;
   List.findById(id)
-    .then((list) => {
-      if (list.userId == req.user._id || req.user.isAdmin) {
-        List.findByIdAndUpdate(id, {
+    .then((list1) => {
+      req.user.share.forEach(shareUser => {
+        if (list1.userId == req.user._id || req.user.isAdmin || shareUser.id == list1.userId) {
+          List.findByIdAndUpdate(id, {
             listName: req.body.listName,
-            list: req.body.list
+            list: req.body.list,
+            public: req.body.public
           },
-          (err, list) => {
+          (err, list2) => {
             if (err) {
               return res.status(500).json(err);
             }
             res.status(202).json({
-              msg: `list id ${list._id} updated`
+              msg: `list id ${list1._id} updated`
             });
           });
-      } else {
-        return res.status(403).json({
-          message: 'unauthorized access'
-        });
-      }
+        } else {
+          return res.status(403).json({
+            message: 'unauthorized access'
+          });
+        }
+      })
     })
     .catch(err => res.status(404).json({
-      message: `event with id ${id} not found`,
+      message: `list with id ${id} not found`,
       error: err
     }));
 };
@@ -137,4 +132,3 @@ module.exports.deleteListById = (req, res) => {
       error: err
     }));
 };
-

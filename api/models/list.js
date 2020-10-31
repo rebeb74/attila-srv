@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const listSchema = new mongoose.Schema({
     listName: String,
+    userName: String,
     list: [{
         value: String,
         checked: Boolean,
@@ -11,6 +12,7 @@ const listSchema = new mongoose.Schema({
         }
     }],
     userId: String,
+    public: Boolean,
     createdOn: {
         type: Date,
         default: Date.now
