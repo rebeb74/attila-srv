@@ -40,7 +40,7 @@ module.exports.getUsers = (req, res) => {
 };
 
 module.exports.getUser = (req, res) => {
-  const id = req.user._id
+  const id = req.user._id;
   User.findById(id)
     .then((user) => {
       return res.status(200).json(user);
@@ -79,7 +79,7 @@ module.exports.getUserIdByUsername = (req, res) => {
       return res.status(200).json(user[0]);
     })
     .catch(err => res.status(500).json({
-      message: `user not found`,
+      message: 'user not found',
       error: err
     }));
 
@@ -110,65 +110,51 @@ module.exports.updateUserById = async (req, res) => {
     });
   }
 
-  let checkUsername = false;
-  let checkEmail = false;
-
-  await User.find({
-    username: req.body.username
-  }, (err, result) => {
-    if (result == '' || req.user._id.toString() === result[0]._id.toString()) {
-      if (id == req.user._id || req.user.isAdmin) {
-        checkUsername = true;
+  if (id == req.user._id || req.user.isAdmin) {
+    User.find({
+      username: req.body.username
+    }, (err, result) => {
+      if (result == '' || req.user._id.toString() === result[0]._id.toString()) {
+        User.find({
+          email: req.body.email
+        }, (err, result) => {
+          if (result == '' || req.user._id.toString() === result[0]._id.toString()) {
+            User.findByIdAndUpdate(id, {
+                username: req.body.username,
+                email: req.body.email,
+                share: req.body.share,
+              },
+              (err, user) => {
+                if (err) {
+                  return res.status(500).json({
+                    message: 'User Update Failed',
+                    code: 'user_update_failed'
+                  });
+                }
+                res.status(202).json({
+                  msg: 'user updated'
+                });
+              });
+          } else {
+            return res.status(409).json({
+              message: 'email or user already exist',
+              code: 'email_username_already_used'
+            });
+          }
+        });
       } else {
-        return res.status(403).json({
-          message: 'unauthorized access'
+        return res.status(409).json({
+          message: 'email or user already exist',
+          code: 'email_username_already_used'
         });
       }
-    } else {
-      checkUsername = false;
-    }
-  });
-
-  await User.find({
-    email: req.body.email
-  }, (err, result) => {
-    if (result == '' || req.user._id.toString() === result[0]._id.toString()) {
-      if (id == req.user._id || req.user.isAdmin) {
-        checkEmail = true;
-      } else {
-        return res.status(403).json({
-          message: 'unauthorized access'
-        });
-      }
-    } else {
-      checkEmail = false;
-    }
-  });
-
-  if (checkUsername && checkEmail) {
-    await User.findByIdAndUpdate(id, {
-        username: req.body.username,
-        email: req.body.email,
-        share: req.body.share,
-      },
-      (err, user) => {
-        if (err) {
-          return res.status(500).json({
-            message: 'user not found'
-          });
-        }
-        res.status(202).json({
-          msg: `user updated`
-        });
-      });
+    });
   } else {
-    return res.status(409).json({
-      message: `email or user already exist`
+    return res.status(403).json({
+      message: 'unauthorized access',
+      code: 'unauthorized_access'
     });
   }
-
-  let isSharedAdded = false;
-
   if (req.body.share != []) {
     req.body.share.forEach(element => {
       User.findById(element.id).exec()
@@ -176,11 +162,11 @@ module.exports.updateUserById = async (req, res) => {
           if (userShare.isShared != []) {
             let isAlreadyAdded = false;
             userShare.isShared.forEach((isSharedUser => {
-              if(isSharedUser.id == req.body._id){
+              if (isSharedUser.id == req.body._id) {
                 isAlreadyAdded = true;
               }
             }));
-            if(!isAlreadyAdded){
+            if (!isAlreadyAdded) {
               userShare.isShared.push({
                 id: req.user._id,
                 email: req.user.email,
@@ -188,8 +174,8 @@ module.exports.updateUserById = async (req, res) => {
               });
               User.findByIdAndUpdate(userShare._id, userShare)
                 .exec()
-                .then((success) => console.log( success))
-                .catch((error) => console.log( error))
+                .then((success) => console.log(success))
+                .catch((error) => console.log(error));
               isSharedAdded = true;
             }
           } else {
@@ -200,8 +186,8 @@ module.exports.updateUserById = async (req, res) => {
             });
             User.findByIdAndUpdate(userShare._id, userShare)
               .exec()
-              .then((success) => console.log( success))
-              .catch((error) => console.log( error))
+              .then((success) => console.log(success))
+              .catch((error) => console.log(error));
             isSharedAdded = true;
           }
         })
@@ -214,18 +200,18 @@ module.exports.updateUserIsSharedById = (req, res) => {
   const id = req.params.id;
   console.log('req.body', req.body);
   User.findByIdAndUpdate(id, req.body)
-  .exec()
-  .then((success) => {
-    console.log('success', success)
-    res.status(202).json({
-      msg: `user updated`
+    .exec()
+    .then((success) => {
+      console.log('success', success);
+      res.status(202).json({
+        msg: 'user updated'
+      });
+    })
+    .catch((error) => {
+      return res.status(500).json({
+        message: 'user not found'
+      });
     });
-  })
-  .catch((error) => {
-    return res.status(500).json({
-      message: 'user not found'
-    });
-  })
 };
 
 module.exports.deleteUserById = (req, res) => {
