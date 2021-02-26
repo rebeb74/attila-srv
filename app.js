@@ -34,7 +34,9 @@ app.use(bodyParser.urlencoded({
 // helmet
 app.use(helmet());
 // Cors
-app.use(cors());
+app.use(cors({
+    credentials: true
+}));
 
 // API Configuration
 app.use('/api', api);
