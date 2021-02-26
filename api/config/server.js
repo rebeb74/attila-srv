@@ -12,6 +12,6 @@ const appRoot = require('app-root-path');
  */
 module.exports = env => ({
   host: process.env.HOST || 'localhost',
-  port: process.env.PORT || 80,
+  port: process.env.PORT || 3333,
   db: process.env.DB
 });
